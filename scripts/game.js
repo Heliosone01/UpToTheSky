@@ -8,8 +8,6 @@ const GROUND_HEIGHT = 100;
 const CLICK_SOUND_SRC = "resources/click.mp3";
 const BG_MUSIC_SRC = "resources/bg-music.mp3";
 
-let bgMusic = null;
-
 // ====================== 图片 ======================
 const IMG_NORMAL = "resources/player.png";
 const IMG_UP = "resources/player_up.png";
@@ -26,9 +24,11 @@ let gameStart = false;
 
 let maxHeight = 0;
 let lastCloudSection = -999999;
-
-// 旋转
 let rotate = 0;
+
+// 音频兼容（手机核心）
+let bgMusic;
+let audioUnlocked = false;
 
 // ====================== 云朵生成 ======================
 function createClouds() {
@@ -49,6 +49,14 @@ function createClouds() {
   }
 }
 
+// ====================== 手机解锁音频 ======================
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  const temp = new Audio();
+  temp.play().catch(() => {});
+}
+
 // ====================== 启动 ======================
 window.onload = function () {
   player = document.getElementById("player");
@@ -62,6 +70,7 @@ window.onload = function () {
   createClouds();
 
   document.body.addEventListener("click", onPlayerClick);
+  document.body.addEventListener("touchstart", onPlayerClick);
   requestAnimationFrame(update);
 };
 
@@ -88,14 +97,11 @@ function update() {
   let renderY = y % SCREEN_HEIGHT;
   if (renderY > 0) renderY -= SCREEN_HEIGHT;
 
-  // 永远带上 rotate，不可能被覆盖
   player.style.transform = `translateX(-50%) translateY(${renderY}px) rotate(${rotate}deg)`;
 
-  // 地面
   const ground = document.querySelector(".ground");
   ground.style.display = Math.abs(y) < SCREEN_HEIGHT ? "block" : "none";
 
-  // 云朵
   const currentCloudSection = Math.floor(Math.abs(y) / SCREEN_HEIGHT);
   if (currentCloudSection !== lastCloudSection) {
     createClouds();
@@ -106,36 +112,54 @@ function update() {
 }
 
 // ====================== 点击 ======================
-function onPlayerClick() {
+function onPlayerClick(e) {
+  e.preventDefault();
+  unlockAudio();
+
   if (gameOver) return;
 
   if (!gameStart) {
     gameStart = true;
+
+    // 手机必生效背景音乐
     bgMusic = new Audio(BG_MUSIC_SRC);
     bgMusic.loop = false;
-    bgMusic.play().catch(() => {});
-    bgMusic.addEventListener("ended", () => {
-      if (!gameOver) endGame();
+    bgMusic.load();
+    bgMusic.play().catch(() => {
+      setTimeout(() => bgMusic.play().catch(() => {}), 100);
     });
+
+    // 音乐结束 → 必结束游戏
+    bgMusic.onended = function () {
+      if (!gameOver) endGame();
+    };
+
+    // 兜底：防止音乐不触发结束
+    setTimeout(() => {
+      if (!gameOver) endGame();
+    }, 35000); // 35 秒后强制结束（你可改）
   }
 
   vy = JUMP_FORCE;
 
-  const clickAudio = new Audio(CLICK_SOUND_SRC);
-  clickAudio.volume = 1;
-  clickAudio.play().catch(() => {});
+  // 点击音效
+  const snd = new Audio(CLICK_SOUND_SRC);
+  snd.volume = 1;
+  snd.play().catch(() => {});
 
-  // 强制旋转
+  // 旋转
   rotate = 45;
-  setTimeout(() => {
-    rotate = 0;
-  }, 300);
+  setTimeout(() => (rotate = 0), 300);
 }
 
 // ====================== 结束 ======================
 function endGame() {
   gameOver = true;
-  scoreDisplay.innerText = `最高高度：${Math.round(maxHeight)}m`;
+  if (bgMusic) {
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+  }
+  scoreDisplay.innerText = `最高高度：${Math.round(maxHeight)/2}m`;
   resultPanel.style.display = "block";
 }
 
@@ -149,12 +173,6 @@ function restart() {
 
   player.src = IMG_NORMAL;
 
-  if (bgMusic) {
-    bgMusic.pause();
-    bgMusic.currentTime = 0;
-  }
-
-  document.querySelector(".ground").style.display = "block";
   resultPanel.style.display = "none";
   createClouds();
   requestAnimationFrame(update);
