@@ -2,6 +2,7 @@
 const JUMP_FORCE = -12;
 const GRAVITY = 0.4;
 const SCREEN_HEIGHT = window.innerHeight;
+const GROUND_HEIGHT = 100;
 
 // ====================== 音频 ======================
 const CLICK_SOUND_SRC = "resources/click.mp3";
@@ -24,10 +25,14 @@ let gameOver = false;
 let gameStart = false;
 
 let maxHeight = 0;
-let lastCloudY = -999999;
+let lastCloudSection = -999999;
+
+// 旋转
+let rotate = 0;
 
 // ====================== 云朵生成 ======================
 function createClouds() {
+  document.querySelectorAll('.cloud').forEach(cloud => cloud.remove());
   const count = 7;
   for (let i = 0; i < count; i++) {
     const cloud = document.createElement("div");
@@ -50,7 +55,6 @@ window.onload = function () {
   resultPanel = document.getElementById("result");
   scoreDisplay = document.getElementById("score");
 
-  // 地面只创建一次，固定在底部
   const ground = document.createElement("div");
   ground.classList.add("ground");
   document.body.appendChild(ground);
@@ -65,46 +69,37 @@ window.onload = function () {
 function update() {
   if (gameOver) return;
 
-  // 物理
   vy += GRAVITY;
   y += vy;
 
-  // 第一段：站在地面上
-  if (y > 0) {
-    y = 0;
+  const groundY = 0;
+  if (y > groundY) {
+    y = groundY;
     vy = 0;
   }
 
-  // 记录最高高度
   const currentHeight = Math.abs(y);
   if (currentHeight > maxHeight) {
     maxHeight = currentHeight;
   }
 
-  // 切换上升/下降图片
   player.src = vy < 0 ? IMG_UP : IMG_NORMAL;
 
-  // ====================== 主角在屏幕内循环 ======================
   let renderY = y % SCREEN_HEIGHT;
-  if (renderY > 0) {
-    renderY -= SCREEN_HEIGHT;
-  }
-  player.style.transform = `translateX(-50%) translateY(${renderY}px)`;
+  if (renderY > 0) renderY -= SCREEN_HEIGHT;
 
-  // ====================== 关键：只在第一段显示地面 ======================
+  // 永远带上 rotate，不可能被覆盖
+  player.style.transform = `translateX(-50%) translateY(${renderY}px) rotate(${rotate}deg)`;
+
+  // 地面
   const ground = document.querySelector(".ground");
-  if (Math.abs(y) < SCREEN_HEIGHT) {
-    ground.style.display = "block"; // 第一段：显示地面
-  } else {
-    ground.style.display = "none";  // 飞上去：隐藏地面
-  }
+  ground.style.display = Math.abs(y) < SCREEN_HEIGHT ? "block" : "none";
 
-  // 云朵每过一屏重新生成
-  const cloudSection = Math.floor(Math.abs(y) / SCREEN_HEIGHT);
-  if (cloudSection !== lastCloudY) {
-    document.querySelectorAll('.cloud').forEach(c => c.remove());
+  // 云朵
+  const currentCloudSection = Math.floor(Math.abs(y) / SCREEN_HEIGHT);
+  if (currentCloudSection !== lastCloudSection) {
     createClouds();
-    lastCloudY = cloudSection;
+    lastCloudSection = currentCloudSection;
   }
 
   requestAnimationFrame(update);
@@ -119,7 +114,6 @@ function onPlayerClick() {
     bgMusic = new Audio(BG_MUSIC_SRC);
     bgMusic.loop = false;
     bgMusic.play().catch(() => {});
-
     bgMusic.addEventListener("ended", () => {
       if (!gameOver) endGame();
     });
@@ -128,8 +122,14 @@ function onPlayerClick() {
   vy = JUMP_FORCE;
 
   const clickAudio = new Audio(CLICK_SOUND_SRC);
-  clickAudio.volume = 1.0;
+  clickAudio.volume = 1;
   clickAudio.play().catch(() => {});
+
+  // 强制旋转
+  rotate = 45;
+  setTimeout(() => {
+    rotate = 0;
+  }, 300);
 }
 
 // ====================== 结束 ======================
@@ -144,7 +144,8 @@ function restart() {
   gameOver = false;
   gameStart = false;
   y = vy = maxHeight = 0;
-  lastCloudY = -999999;
+  lastCloudSection = -999999;
+  rotate = 0;
 
   player.src = IMG_NORMAL;
 
@@ -153,6 +154,8 @@ function restart() {
     bgMusic.currentTime = 0;
   }
 
+  document.querySelector(".ground").style.display = "block";
   resultPanel.style.display = "none";
+  createClouds();
   requestAnimationFrame(update);
 }

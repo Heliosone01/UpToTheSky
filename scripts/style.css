@@ -2,19 +2,39 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+
+  /* 全浏览器屏蔽点击高亮、放大、选中、拖拽 */
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  touch-action: none !important;
+  outline: none !important;
+}
+
+img {
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+  pointer-events: auto !important;
+}
+
+html, body {
+  touch-action: none !important;
+  overflow: hidden !important;
+  zoom: 1.0 !important;
+  max-zoom: 1.0 !important;
+  min-zoom: 1.0 !important;
 }
 
 body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  cursor: pointer;
   background: #87ceeb;
   position: relative;
   cursor: default !important;
 }
 
-/* 只在最底部出现的地面 */
 .ground {
   position: fixed;
   left: 0;
@@ -23,13 +43,13 @@ body {
   height: 100px;
   background: #5cad80;
   z-index: 4;
+  display: block;
 }
 
-/* 云朵样式 & 动画 */
 .cloud {
   position: absolute;
   background: white;
-  border-radius: 50px;
+  border-radius: 150px;
   opacity: 0.8;
   animation: cloudMove linear infinite;
   z-index: 1;
@@ -49,14 +69,17 @@ body {
 }
 
 #player {
-  width: 60px;
-  height: 60px;
+  width: 90px;
+  height: 90px;
   position: absolute;
   left: 50%;
   bottom: 100px;
   transform: translateX(-50%);
   object-fit: contain;
   z-index: 5;
+  /* 这里不加过渡！保证瞬间旋转 */
+  transition: none !important;
+  transform-origin: center center;
 }
 
 #time {
