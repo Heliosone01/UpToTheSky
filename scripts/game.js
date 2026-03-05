@@ -4,14 +4,14 @@ const GRAVITY = 0.4;
 const CAMERA_LERP = 0.08;
 
 // ====================== 音频 ======================
-const CLICK_SOUND_SRC = "UpToTheSky/resources/click.mp3";
-const BG_MUSIC_SRC = "UpToTheSky/resources/bg-music.mp3";
+const CLICK_SOUND_SRC = "resources/click.mp3";
+const BG_MUSIC_SRC = "resources/bg-music.mp3";
 
 let bgMusic = null;
 
 // ====================== 图片 ======================
-const IMG_NORMAL = "UpToTheSky/resources/player.png";
-const IMG_UP = "UpToTheSky/resources/player_up.png";
+const IMG_NORMAL = "resources/player.png";
+const IMG_UP = "resources/player_up.png";
 
 // ====================== 游戏状态 ======================
 let player;
